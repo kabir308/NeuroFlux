@@ -1,0 +1,14 @@
+// Chargement du modèle
+Future<void> loadModel() async {
+  await Tflite.loadModel(
+    model: "assets/multimodal.tflite",
+    labels: "assets/labels.txt",
+  );
+}
+
+// Inférence
+Future<String> runInference({String? text, File? image, File? audio}) async {
+  var inputs = _preprocess(text, image, audio); // Préprocessing
+  var output = await Tflite.runModelOnBinary(binary: inputs);
+  return output.toString();
+}
