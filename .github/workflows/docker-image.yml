@@ -1,18 +1,37 @@
-name: Docker Image CI
+# Base image Alpine Linux
+FROM alpine:latest
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+# Mettre à jour et installer les dépendances minimales
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    build-base \
+    cmake \
+    git \
+    wget \
+    curl \
+    bash
 
-jobs:
+# Installer les dépendances Python minimales
+RUN pip3 install --no-cache-dir \
+    torch==2.0.0 \
+    transformers==4.30.0 \
+    numpy==1.24.0 \
+    onnxruntime==1.14.0
 
-  build:
+# Créer le répertoire de travail
+WORKDIR /app
 
-    runs-on: ubuntu-latest
+# Copier les fichiers nécessaires
+COPY requirements.txt ./
+COPY src/ ./src/
+COPY models/ ./models/
+COPY wasm/ ./wasm/
 
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+# Installer les dépendances spécifiques
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Compiler les modèles en WebAssembly
+RUN cd wasm && make
+
+# Commande par défaut
