@@ -1,0 +1,19 @@
+{
+  "description": "Microscopic AI models for edge devices",
+  "citation": "",
+  "homepage": "",
+  "license": "Apache-2.0",
+  "features": {
+    "model_name": "string",
+    "model_type": "string",
+    "pipeline_tag": "string",
+    "model_size": "int32",
+    "description": "string",
+    "target_devices": ["string"],
+    "performance": {
+      "inference_time": "string",
+      "memory_usage": "string",
+      "accuracy": "string"
+    }
+  }
+}

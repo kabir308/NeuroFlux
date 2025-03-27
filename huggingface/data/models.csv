@@ -1,0 +1,4 @@
+model_name,model_type,pipeline_tag,model_size,description,target_devices,inference_time,memory_usage,accuracy
+tinybert,bert,text-classification,10,Lightweight version of BERT for microscopic AI applications,"microcontrollers, IoT devices",~10ms,~2MB RAM,90%
+mobilenet,mobilenet,image-classification,5,Lightweight version of MobileNet for microscopic AI applications,"microcontrollers, IoT devices",~5ms,~1MB RAM,85%
+emotion-detector,custom,text-classification,3,Specialized model for detecting emotions in text and voice,"microcontrollers, IoT devices",~2ms,~500KB RAM,88%
