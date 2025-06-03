@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Gallery - AI Showcase</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Explore Our AI Models</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('gallery_page') }}">Model Gallery</a></li>
+        </ul>
+    </nav>
+    <main>
+        <div class="gallery-container">
+            {% if models %}
+                <ul>
+                    {% for model in models %}
+                        <li>
+                            <h2>{{ model.name }}</h2>
+                            <p>{{ model.description }}</p>
+                            {% if model.id == 'emotion-detector' %}
+                                <p><a href="{{ url_for('demo_emotion_detector') }}">Try Demo</a></p>
+                            {% elif model.id == 'mobilenet' %}
+                                <p><a href="{{ url_for('demo_mobilenet') }}">Try Demo</a></p>
+                            {% elif model.id == 'tinybert' %}
+                                <p><a href="{{ url_for('demo_tinybert') }}">Try Demo</a></p>
+                            {% else %}
+                                <p><a href="#">Try Demo Available Soon</a></p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No models to display at the moment. Please check back later!</p>
+            {% endif %}
+        </div>
+        {# Removed redundant "Back to Home" link as it's in the nav bar #}
+    </main>
+    <footer>
+        <p>&copy; 2025 AI Project</p>
+    </footer>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detector Demo - AI Model Gallery</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Emotion Detector Demo</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('index') }}">Home</a></li>
+            <li><a href="{{ url_for('gallery_page') }}">Model Gallery</a></li>
+        </ul>
+    </nav>
+    <main>
+        <div class="demo-container">
+            <div class="explanation">
+                <p>This demo showcases the Emotion Detector model.</p>
+                <p>It attempts to predict the primary emotion from the text you provide.</p>
+                <p>Type or paste text into the box below and click 'Detect Emotion'.</p>
+                <p><em>Note: This model uses a simplified vocabulary for demonstration purposes; results may vary.</em></p>
+            </div>
+            <form method="POST" action="{{ url_for('demo_emotion_detector') }}">
+                <div>
+                    <label for="text_input">Enter text:</label>
+                </div>
+                <div>
+                    <textarea id="text_input" name="text_input" rows="4" cols="50">{{ input_text if input_text else '' }}</textarea>
+                </div>
+                <div>
+                    <button type="submit">Detect Emotion</button>
+                </div>
+            </form>
+
+            {% if error %}
+                <section id="error">
+                    <h2>Error:</h2>
+                    <p>{{ error }}</p>
+                </section>
+            {% endif %}
+
+            {% if predicted_label and predicted_label != 'N/A' and not error %}
+                <section id="results">
+                    <h2>Results:</h2>
+                    <p><strong>Original Text:</strong> {{ input_text }}</p>
+                    <p><strong>Predicted Emotion:</strong> {{ predicted_label }}</p>
+                    {% if confidence is not none %}
+                        <p><strong>Confidence:</strong> {{ "%.3f"|format(confidence) }}</p>
+                    {% endif %}
+                </section>
+            {% elif not error and request.method == 'POST' and not (predicted_label and predicted_label != 'N/A') %}
+                 <section id="results">
+                    <h2>Results:</h2>
+                    <p><strong>Original Text:</strong> {{ input_text }}</p>
+                    <p>No specific emotion detected or input was empty.</p>
+                </section>
+            {% endif %}
+            {# Removed redundant "Back to Gallery" link #}
+        </div>
+    </main>
+    <footer>
+        <p>&copy; 2025 AI Project</p>
+    </footer>
+    <script src="{{ url_for('static', filename='script.js') }}"></script> {# Assuming script.js might be used later #}
+</body>
+</html>

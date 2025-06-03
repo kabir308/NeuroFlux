@@ -1,0 +1,202 @@
+/* General Body Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Header Styles */
+header {
+    background: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    border-bottom: #0779e4 3px solid;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+/* Navigation Menu Styles */
+nav {
+    background: #444;
+    padding: 0.5rem 0;
+    text-align: center;
+}
+
+nav ul {
+    padding: 0;
+    list-style: none;
+    margin: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
+/* Main Content Area */
+main {
+    padding: 20px;
+    margin: 15px auto;
+    max-width: 960px; /* Max width for content */
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Footer Styles */
+footer {
+    text-align: center;
+    padding: 1rem 0;
+    background: #333;
+    color: #fff;
+    position: relative; /* Changed from fixed to relative for better flow */
+    bottom: 0;
+    width: 100%;
+    margin-top: 30px; /* Add some space above footer */
+}
+
+/* Links */
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Model Gallery Page Styles */
+.gallery-container ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.gallery-container li {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.gallery-container li h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.gallery-container li p {
+    margin-bottom: 10px;
+}
+
+.gallery-container li a { /* Demo link style */
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+}
+
+.gallery-container li a:hover {
+    background-color: #0056b3;
+}
+
+
+/* Demo Page Styles */
+.demo-container form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.demo-container textarea,
+.demo-container input[type="file"] {
+    width: calc(100% - 22px); /* Adjust for padding/border */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+.demo-container button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.demo-container button:hover {
+    background-color: #218838;
+}
+
+#results-section, .results-container, #error, #results { /* Demo results styling */
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+}
+#results h2, #error h2, #results-section h2 {
+    margin-top: 0;
+}
+
+.uploaded-image {
+    max-width: 100%; /* Make image responsive within its container */
+    height: auto; /* Maintain aspect ratio */
+    display: block;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+}
+
+.predictions ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.predictions li {
+    padding: 5px 0;
+    border-bottom: 1px dotted #ccc;
+}
+.predictions li:last-child {
+    border-bottom: none;
+}
+
+/* Explanation section for demo pages */
+.explanation {
+    background-color: #eef; /* Light blue/lavender background */
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border-left: 5px solid #007bff;
+}
+
+.explanation p {
+    margin-bottom: 0.5em;
+}
+.explanation p:last-child {
+    margin-bottom: 0;
+}
