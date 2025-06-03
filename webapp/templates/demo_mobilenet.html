@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobileNet Image Classification Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .results-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .uploaded-image {
+            max-width: 300px;
+            max-height: 300px;
+            border: 1px solid #ccc;
+        }
+        .predictions ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .predictions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MobileNet Image Classification Demo</h1>
+    </header>
+    <main>
+        <form method="POST" action="{{ url_for('demo_mobilenet') }}" enctype="multipart/form-data">
+            <div>
+                <label for="image_file">Upload an image:</label>
+            </div>
+            <div>
+                <input type="file" id="image_file" name="image_file" accept="image/*" required>
+            </div>
+            <div>
+                <button type="submit">Classify Image</button>
+            </div>
+        </form>
+
+        {% if error %}
+            <section id="error">
+                <h2>Error:</h2>
+                <p>{{ error }}</p>
+            </section>
+        {% endif %}
+
+        {% if results %}
+            <section id="results-section">
+                <h2>Results:</h2>
+                <div class="results-container">
+                    {% if base64_image_string %}
+                        <div class="image-preview">
+                            <p><strong>Uploaded Image:</strong></p>
+                            <img src="data:image/jpeg;base64,{{ base64_image_string }}" alt="Uploaded Image" class="uploaded-image">
+                        </div>
+                    {% endif %}
+                    <div class="predictions">
+                        <p><strong>Top 5 Predictions:</strong></p>
+                        <ul>
+                            {% for result in results %}
+                                <li>{{ result.label }}: {{ "%.3f"|format(result.score) }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
+
+        <p><a href="{{ url_for('gallery_page') }}">Back to Gallery</a></p>
+    </main>
+    <footer>
+        <p>&copy; 2025 AI Project</p>
+    </footer>
+</body>
+</html>

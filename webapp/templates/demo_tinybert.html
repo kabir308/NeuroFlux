@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyBERT Sentiment Analysis Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>TinyBERT Sentiment Analysis Demo</h1>
+    </header>
+    <main>
+        <form method="POST" action="{{ url_for('demo_tinybert') }}">
+            <div>
+                <label for="text_input">Enter text for sentiment analysis:</label>
+            </div>
+            <div>
+                <textarea id="text_input" name="text_input" rows="4" cols="50">{{ input_text if input_text else '' }}</textarea>
+            </div>
+            <div>
+                <button type="submit">Analyze Sentiment</button>
+            </div>
+        </form>
+
+        {% if error %}
+            <section id="error">
+                <h2>Error:</h2>
+                <p>{{ error }}</p>
+            </section>
+        {% endif %}
+
+        {% if predicted_label and predicted_label != 'N/A' %}
+            <section id="results">
+                <h2>Results:</h2>
+                <p><strong>Original Text:</strong> {{ input_text }}</p>
+                <p><strong>Predicted Sentiment:</strong> {{ predicted_label }}</p>
+                {% if confidence is not none %}
+                    <p><strong>Confidence:</strong> {{ "%.3f"|format(confidence) }}</p>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <p><a href="{{ url_for('gallery_page') }}">Back to Gallery</a></p>
+    </main>
+    <footer>
+        <p>&copy; 2025 AI Project</p>
+    </footer>
+</body>
+</html>
