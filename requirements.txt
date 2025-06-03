@@ -16,3 +16,5 @@ networkx>=3.1.0
 Flask
 datasets
 Pillow
+pytest
+pytest-flask

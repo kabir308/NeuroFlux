@@ -68,6 +68,89 @@ NeuroFlux is a technological revolution pushing the boundaries of embedded AI. O
 - WebAssembly: Cross-compilation
 - Documentation: Complete guide
 
+## 🖼️ AI Model Gallery Web Application
+
+The NeuroFlux project includes an interactive web application to showcase some of the AI models and concepts explored. This gallery provides a user-friendly interface to explore, understand, and interact with these models.
+
+### Features
+
+*   **Model Showcase**: Browse a gallery of available AI models, including:
+    *   **Emotion Detector**: Predicts emotions from text input using a custom LSTM-based model.
+    *   **MobileNet**: Performs image classification using a lightweight MobileNetV2 architecture.
+    *   **TinyBERT Sentiment**: Analyzes text sentiment (positive/negative) using a TinyBERT base model with a simple classification head.
+*   **Interactive Demos**: Engage with live demonstrations for each model.
+*   **User-Friendly Interface**: Designed for easy navigation and interaction.
+
+### Running the AI Model Gallery Web App
+
+1.  Ensure you have Python installed (Python 3.8+ recommended).
+2.  Clone this repository (if you haven't already).
+3.  Navigate to the project root directory.
+4.  Install the required Python packages from the main `requirements.txt` file. It's recommended to do this within a virtual environment:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Linux/macOS
+    # venv\Scripts\activate    # On Windows
+    pip install -r requirements.txt
+    ```
+    *Note: This step requires sufficient disk space, as libraries like PyTorch and Transformers can be large.*
+5.  Navigate to the web application directory:
+    ```bash
+    cd webapp
+    ```
+6.  Run the Flask application:
+    ```bash
+    python app.py
+    ```
+    The application will start, and by default, it should be accessible at `http://127.0.0.1:5000` in your web browser.
+
+7.  Open your web browser and go to `http://127.0.0.1:5000`.
+
+### Manual Testing for the Web Application
+
+To ensure the web application is functioning correctly, perform the following manual checks:
+
+*   **Homepage (`/`)**:
+    *   Loads correctly with the title "Welcome - AI Model Gallery".
+    *   Displays the welcome message and introduction to the gallery.
+    *   Navigation links ("Home", "Model Gallery") are present and functional.
+*   **Model Gallery Page (`/gallery`)**:
+    *   Loads correctly when accessed via the navigation link.
+    *   Displays the available models: Emotion Detector, MobileNet, TinyBERT Sentiment.
+    *   Each model entry shows a name, description, and a "Try Demo" button.
+    *   "Try Demo" buttons navigate to the correct demo pages.
+*   **Emotion Detector Demo Page (`/demo/emotion-detector`)**:
+    *   Loads with the title "Emotion Detector Demo - AI Model Gallery".
+    *   The explanation text about the model and its usage is visible.
+    *   Entering text (e.g., "I am happy today") and submitting performs inference.
+    *   The results section displays the original input text, the predicted emotion, and a confidence score.
+    *   Submitting empty input is handled (e.g., shows "No specific emotion detected or input was empty").
+*   **MobileNet Demo Page (`/demo/mobilenet`)**:
+    *   Loads with the title "MobileNet Demo - AI Model Gallery".
+    *   The explanation text about the model is visible.
+    *   Uploading a valid image file (e.g., a JPEG or PNG of a common object) and submitting performs inference.
+    *   The uploaded image is displayed on the results page.
+    *   The top 5 classification results (label and score) are shown.
+    *   Submitting without a file or with an unsupported file type is handled (e.g., shows an error message).
+*   **TinyBERT Sentiment Demo Page (`/demo/tinybert`)**:
+    *   Loads with the title "TinyBERT Sentiment Analysis Demo - AI Model Gallery" (or similar, based on final implementation).
+    *   The explanation text about the model is visible.
+    *   Entering text (e.g., "This movie was fantastic!") and submitting performs inference.
+    *   The results section displays the original input text, the predicted sentiment (positive/negative), and a confidence score.
+*   **General Checks**:
+    *   Navigation links ("Home", "Model Gallery") work correctly from all pages.
+    *   The application has a consistent look and feel across pages.
+    *   Basic error handling: If models fail to load (e.g., due to issues with PyTorch installation), the application should still run, and the respective demo pages should ideally indicate that the model is unavailable rather than crashing. (This was implemented in `webapp/app.py`).
+
+### On-Device Inference (WebAssembly)
+
+The NeuroFlux project explores the possibility of on-device inference by compiling models to WebAssembly (Wasm). A script for this purpose, `wasm/tinybert_compile.py`, is included to demonstrate the compilation of TinyBERT to Wasm using ONNX and Apache TVM.
+
+**Current Status**:
+*   Attempts to execute the Wasm compilation script during development were **unsuccessful due to insufficient disk space within the provided cloud-based development environment**. The installation of heavy dependencies like PyTorch, ONNX, and TVM repeatedly failed because of this constraint.
+*   As a result, the WebAssembly compilation for TinyBERT (or other models) could not be completed, and client-side Wasm inference is **not currently integrated** into the web application demos.
+*   This feature remains an important area for future development. Successful compilation would enable models to run directly in the user's browser, showcasing the "microscopic AI" vision of NeuroFlux more effectively. This will require an environment with adequate resources for the compilation toolchain.
+
 ## 🛠️ Installation
 
 ```bash
