@@ -5,6 +5,24 @@ from transformers import BertTokenizer
 import sys
 import os
 import json
+import numpy as np
+try:
+    from tflite_runtime.interpreter import Interpreter
+    try:
+        from tflite_runtime.interpreter import load_delegate
+        print("Successfully imported load_delegate from tflite_runtime.interpreter")
+    except ImportError:
+        load_delegate = None
+        print("Failed to import load_delegate from tflite_runtime.interpreter. GPU delegation might not be available or might need a different import method.")
+except ImportError:
+    print("tflite_runtime.interpreter not found, trying tensorflow.lite.Interpreter")
+    try:
+        import tensorflow.lite as tflite
+        Interpreter = tflite.Interpreter
+    except ImportError:
+        print("Neither tflite_runtime nor tensorflow.lite could be imported. TFLite functionality will be unavailable.")
+        Interpreter = None # Placeholder to avoid further errors if Interpreter is None
+
 import requests # For fetching imagenet labels
 from PIL import Image # For image manipulation
 import torchvision.transforms as T # For image transforms
@@ -21,7 +39,7 @@ project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.insert(0, project_root)
 
 from src.models.emotion_detector import EmotionDetector
-from models.mobilenet.model import MobileNetV2
+# from models.mobilenet.model import MobileNetV2 # Comment this out
 from models.tinybert.model import TinyBERT # Import TinyBERT
 
 app = Flask(__name__)
@@ -43,11 +61,17 @@ if tokenizer: # Only if tokenizer loaded successfully
     except Exception as e:
         print(f"Error loading Emotion Detector model: {e}")
 
-# --- MobileNet Setup ---
+# --- MobileNet Setup --- # This section is replaced for TFLite
 IMAGENET_LABELS_URL = "https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json"
 IMAGENET_LABELS_FILE = "imagenet_class_index.json"
 IMAGENET_LABELS = {}
-mobilenet_model = None
+# mobilenet_model = None # Comment this out
+# try: # Comment out this whole try-except block for PyTorch MobileNetV2
+#     mobilenet_model = MobileNetV2(num_classes=1000)
+#     mobilenet_model.eval()
+# except Exception as e:
+#     print(f"Error loading MobileNet model: {e}")
+
 try:
     if os.path.exists(IMAGENET_LABELS_FILE):
         with open(IMAGENET_LABELS_FILE, 'r') as f: IMAGENET_LABELS = json.load(f)
@@ -62,15 +86,68 @@ except Exception as e:
     print(f"Failed to fetch/load ImageNet labels: {e}. Using placeholder.")
     IMAGENET_LABELS = {"0": ["n01440764", "tench"], "1": ["n01443537", "goldfish"], "294": ["n02123045", "tabby_cat"]}
 
-try:
-    mobilenet_model = MobileNetV2(num_classes=1000)
-    mobilenet_model.eval()
-except Exception as e:
-    print(f"Error loading MobileNet model: {e}")
+# --- EfficientNet-Lite4 (TFLite) Setup ---
+TFLITE_MODEL_PATH = "webapp/models/tflite/efficientnet_lite4_classification_2.tflite"
+tflite_interpreter = None
+tflite_input_details = None
+tflite_output_details = None
+model_loaded_successfully = False
+delegates_list = []
+
+if Interpreter: # Proceed only if Interpreter was successfully imported
+    if os.path.exists(TFLITE_MODEL_PATH):
+        # Attempt to load GPU delegate
+        if load_delegate:
+            try:
+                gpu_delegate_name = None
+                if os.name == 'posix': # Linux/macOS
+                    gpu_delegate_name = 'libtensorflowlite_gpu_delegate.so'
+                elif os.name == 'nt': # Windows
+                    gpu_delegate_name = 'tensorflowlite_gpu_delegate.dll'
+
+                if gpu_delegate_name:
+                    try:
+                        delegates_list.append(load_delegate(gpu_delegate_name))
+                        print(f"Attempting to use GPU delegate: {gpu_delegate_name}")
+                    except Exception as e_delegate_load:
+                        print(f"Failed to load delegate '{gpu_delegate_name}': {e_delegate_load}. Will try CPU.")
+                        delegates_list = []
+                else:
+                    print("GPU delegate name not determined for this OS. Using CPU.")
+
+            except Exception as e_delegate_general:
+                print(f"Error during GPU delegate setup: {e_delegate_general}. Using CPU.")
+                delegates_list = []
+        else:
+            print("load_delegate function not available. Using CPU for TFLite.")
+
+        # Initialize interpreter (with or without delegate)
+        try:
+            tflite_interpreter = Interpreter(model_path=TFLITE_MODEL_PATH, experimental_delegates=delegates_list if delegates_list else None)
+            tflite_interpreter.allocate_tensors()
+            tflite_input_details = tflite_interpreter.get_input_details()
+            tflite_output_details = tflite_interpreter.get_output_details()
+            model_loaded_successfully = True
+            if delegates_list:
+                print(f"TFLite model loaded successfully from {TFLITE_MODEL_PATH} WITH GPU delegate.")
+            else:
+                print(f"TFLite model loaded successfully from {TFLITE_MODEL_PATH} using CPU.")
+            print("Input details:", tflite_input_details)
+            print("Output details:", tflite_output_details)
+        except Exception as e_interpreter_init:
+            print(f"Error loading TFLite model or allocating tensors (even with CPU fallback attempt): {e_interpreter_init}")
+            model_loaded_successfully = False
+
+    else: # File not found
+        print(f"TFLite model file not found at {TFLITE_MODEL_PATH}. Please download it.")
+        model_loaded_successfully = False
+else:
+    print("TFLite Interpreter not available. Skipping TFLite model loading.")
+
 
 image_transforms = T.Compose([
-    T.Resize(256), T.CenterCrop(224), T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    T.Resize([224, 224]), # EfficientNet-Lite models often take exact size
+    T.ToTensor() # This converts PIL image to [0,1] FloatTensor
 ])
 
 # --- TinyBERT Setup (for Sentiment Analysis) ---
@@ -99,9 +176,9 @@ models_data = [
         'description': 'Detects emotions from text. Uses a simplified vocabulary & custom LSTM model.'
     },
     {
-        'id': 'mobilenet',
-        'name': 'MobileNet',
-        'description': 'Classifies images using a lightweight MobileNetV2 model (ImageNet based).'
+        'id': 'mobilenet', # Route /demo/mobilenet still uses this id
+        'name': 'EfficientNet-Lite4 (TFLite Image Classification)',
+        'description': 'Classifies images using the EfficientNet-Lite4 model via TensorFlow Lite. Demonstrates optimized edge inference, with experimental GPU delegate support.'
     },
     {
         'id': 'tinybert',
@@ -147,26 +224,53 @@ def demo_emotion_detector():
 @app.route('/demo/mobilenet', methods=['GET', 'POST'])
 def demo_mobilenet():
     if request.method == 'POST':
-        if not mobilenet_model: return render_template('demo_mobilenet.html', error="MobileNet Model not available.")
+        if not model_loaded_successfully or not tflite_interpreter:
+            return render_template('demo_mobilenet.html', error="EfficientNet-Lite TFLite Model not available or failed to load. Check server logs and ensure model file is present at webapp/models/tflite/.")
+
         if 'image_file' not in request.files or request.files['image_file'].filename == '':
             return render_template('demo_mobilenet.html', error="No image file selected.")
+
         file = request.files['image_file']
         try:
             img_bytes = file.read()
             img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
-            img_tensor = image_transforms(img).unsqueeze(0)
-            with torch.no_grad(): outputs = mobilenet_model(img_tensor)
-            probabilities = torch.softmax(outputs, dim=1)
-            top5_prob, top5_catid_tensor = torch.topk(probabilities, 5)
+
+            img_tensor_chw = image_transforms(img) # Output: [C, H, W], e.g., [3, 224, 224]
+
+            # TFLite models usually expect NHWC: [Batch, Height, Width, Channels]
+            img_tensor_nhwc = img_tensor_chw.permute(1, 2, 0).numpy() # H, W, C (NumPy)
+            img_tensor_nhwc = np.expand_dims(img_tensor_nhwc, axis=0) # 1, H, W, C (NumPy)
+
+            # Ensure it's float32, which ToTensor() should provide
+            if img_tensor_nhwc.dtype != np.float32:
+                img_tensor_nhwc = img_tensor_nhwc.astype(np.float32)
+
+            # Check input tensor shape and type compatibility (optional, for debugging)
+            # print(f"Input tensor shape: {img_tensor_nhwc.shape}, dtype: {img_tensor_nhwc.dtype}")
+            # print(f"Expected input shape: {tflite_input_details[0]['shape']}, type: {tflite_input_details[0]['dtype']}")
+
+            tflite_interpreter.set_tensor(tflite_input_details[0]['index'], img_tensor_nhwc)
+            tflite_interpreter.invoke()
+            tflite_outputs = tflite_interpreter.get_tensor(tflite_output_details[0]['index'])
+
+            # EfficientNet-Lite output on TF Hub is typically logits. Apply softmax.
+            probabilities_tensor = torch.softmax(torch.from_numpy(tflite_outputs), dim=1)
+
+            top5_prob_tensor, top5_catid_tensor = torch.topk(probabilities_tensor, 5)
+
             results = []
-            for i in range(top5_prob.size(1)):
-                prob = top5_prob[0, i].item()
+            for i in range(top5_prob_tensor.size(1)):
+                prob = top5_prob_tensor[0, i].item()
                 cat_id = str(top5_catid_tensor[0, i].item())
                 label_info = IMAGENET_LABELS.get(cat_id, ["unknown", "Unknown Class"])
                 results.append({"label": label_info[1], "score": prob})
+
             base64_image_string = base64.b64encode(img_bytes).decode('utf-8')
             return render_template('demo_mobilenet.html', results=results, base64_image_string=base64_image_string)
-        except Exception as e: print(f"MobileNet error: {e}"); return render_template('demo_mobilenet.html', error=f"Error: {e}")
+        except Exception as e:
+            print(f"EfficientNet-Lite TFLite error: {e}")
+            return render_template('demo_mobilenet.html', error=f"Error processing image with TFLite model: {e}")
+
     return render_template('demo_mobilenet.html')
 
 @app.route('/demo/tinybert', methods=['GET', 'POST'])
@@ -242,7 +346,7 @@ def demo_llm():
 if __name__ == '__main__':
     if not tokenizer: print("CRITICAL: Tokenizer failed to load.")
     if not emotion_model: print("CRITICAL: Emotion Model failed to load.")
-    if not mobilenet_model: print("CRITICAL: MobileNet Model failed to load.")
+    if not model_loaded_successfully: print("CRITICAL: EfficientNet-Lite TFLite Model failed to load or not found. Check logs and model path.")
     if not IMAGENET_LABELS: print("WARNING: ImageNet labels are empty/placeholders.")
     if not tinybert_base_model or not tinybert_classifier_head: print("CRITICAL: TinyBERT model/head failed to load.")
     app.run(debug=True)
