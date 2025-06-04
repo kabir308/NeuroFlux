@@ -206,6 +206,7 @@ $ docker run -it --rm neuroflux:latest
 - [Optimisation de taille](docs/size_optimization.md)
 - [Protocole essaim](docs/swarm_protocol.md)
 - [Guide de compilation](docs/compilation_guide.md)
+- [Android Deployment Guide](docs/android_deployment.md)
 
 ## 🤝 Communauté
 
