@@ -24,7 +24,7 @@ except ImportError:
         Interpreter = None # Placeholder to avoid further errors if Interpreter is None
 
 import requests # For fetching imagenet labels
-from PIL import Image # For image manipulation
+from PIL import Image, ImageDraw # For image manipulation, ImageDraw for drawing boxes
 import torchvision.transforms as T # For image transforms
 import io # For byte streams
 import base64 # For encoding image for HTML display
@@ -32,6 +32,7 @@ import base64 # For encoding image for HTML display
 from webapp.llm_client import query_llm
 # Ensure llm_config is also accessible if not already via llm_client
 from webapp.llm_config import LLM_API_ENDPOINT
+from webapp.ncnn_object_detector import NanoDetPlusNCNN, NCNN_AVAILABLE, COCO_CLASSES
 
 # Adjust path to import from src and models
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -167,6 +168,29 @@ if tokenizer: # TinyBERT also depends on the tokenizer
     except Exception as e:
         print(f"Error loading TinyBERT model or creating classifier head: {e}")
 
+# --- NanoDet-Plus NCNN Object Detector Setup ---
+nanodet_detector = None
+NANODET_PARAM_PATH = "webapp/models/ncnn/nanodet-plus-m_320.param"
+NANODET_BIN_PATH = "webapp/models/ncnn/nanodet-plus-m_320.bin"
+object_detector_loaded_successfully = False
+
+if NCNN_AVAILABLE:
+    if os.path.exists(NANODET_PARAM_PATH) and os.path.exists(NANODET_BIN_PATH):
+        try:
+            nanodet_detector = NanoDetPlusNCNN(
+                param_path=NANODET_PARAM_PATH,
+                bin_path=NANODET_BIN_PATH,
+            )
+            object_detector_loaded_successfully = True
+            print("NanoDet-Plus NCNN detector initialized successfully.")
+        except Exception as e:
+            print(f"Error initializing NanoDet-Plus NCNN detector: {e}")
+            nanodet_detector = None # Ensure it's None if init fails
+    else:
+        print(f"NanoDet-Plus NCNN model files not found. Searched for:\n{NANODET_PARAM_PATH}\n{NANODET_BIN_PATH}")
+        print("Object detection demo will be unavailable.")
+else:
+    print("NCNN is not available. NanoDet-Plus object detection demo will be unavailable.")
 
 # --- General App Data ---
 models_data = [
@@ -189,6 +213,11 @@ models_data = [
         'id': 'llm',
         'name': 'Interactive LLM Demo',
         'description': 'Interact with a configurable Large Language Model. Requires a local LLM server (e.g., text-generation-webui or Ollama) with an OpenAI-compatible API. Configure the endpoint in webapp/llm_config.py.'
+    },
+    {
+        'id': 'object-detection', # Used to build URL /demo/object-detection
+        'name': 'Object Detection (NanoDet-Plus with NCNN)',
+        'description': 'Detects objects in images using the NanoDet-Plus model with the NCNN inference engine. This demo highlights fast CPU-based object detection. Note: NCNN setup and full post-processing logic can be complex.'
     }
 ]
 
@@ -343,10 +372,76 @@ def demo_llm():
                            error_message=error_message,
                            llm_endpoint=LLM_API_ENDPOINT) # Pass endpoint for display/debug
 
+@app.route('/demo/object-detection', methods=['GET', 'POST'])
+def demo_object_detection():
+    detection_results_img_b64 = None
+    detections_list = []
+    error_message = None
+    original_img_b64 = None # To display the uploaded image even if detection fails
+
+    if not NCNN_AVAILABLE:
+        error_message = "NCNN runtime is not available or failed to load. Object detection demo is disabled."
+        return render_template('demo_object_detection.html', error_message=error_message)
+
+    if not object_detector_loaded_successfully or not nanodet_detector:
+        error_message = "NanoDet-Plus NCNN Model not available or failed to load. Check server logs."
+        return render_template('demo_object_detection.html', error_message=error_message)
+
+    if request.method == 'POST':
+        if 'image_file' not in request.files or request.files['image_file'].filename == '':
+            error_message = "No image file selected."
+            return render_template('demo_object_detection.html', error_message=error_message)
+
+        file = request.files['image_file']
+        try:
+            img_bytes = file.read()
+            img_pil = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+
+            buffered_original = io.BytesIO()
+            img_pil.save(buffered_original, format="PNG")
+            original_img_b64 = base64.b64encode(buffered_original.getvalue()).decode('utf-8')
+
+            detections_list = nanodet_detector.detect(img_pil.copy())
+
+            img_with_boxes = img_pil.copy()
+            draw = ImageDraw.Draw(img_with_boxes)
+
+            for det in detections_list:
+                box = det['box']
+                label = det['label']
+                score = det['score']
+
+                draw.rectangle(box, outline="red", width=2)
+                text = f"{label} ({score:.2f})"
+                text_position = (box[0], box[1] - 10 if box[1] - 10 > 0 else box[1])
+                draw.text(text_position, text, fill="red")
+
+            buffered_processed = io.BytesIO()
+            img_with_boxes.save(buffered_processed, format="PNG")
+            detection_results_img_b64 = base64.b64encode(buffered_processed.getvalue()).decode('utf-8')
+
+        except Exception as e:
+            print(f"Error during object detection: {e}")
+            error_message = f"Error during object detection: {e}"
+            if not original_img_b64 and 'img_pil' in locals():
+                 buffered_original_fallback = io.BytesIO()
+                 img_pil.save(buffered_original_fallback, format="PNG")
+                 original_img_b64 = base64.b64encode(buffered_original_fallback.getvalue()).decode('utf-8')
+
+    return render_template('demo_object_detection.html',
+                           error_message=error_message,
+                           original_image_b64=original_img_b64,
+                           detection_results_image_b64=detection_results_img_b64,
+                           detections=detections_list)
+
 if __name__ == '__main__':
     if not tokenizer: print("CRITICAL: Tokenizer failed to load.")
     if not emotion_model: print("CRITICAL: Emotion Model failed to load.")
     if not model_loaded_successfully: print("CRITICAL: EfficientNet-Lite TFLite Model failed to load or not found. Check logs and model path.")
     if not IMAGENET_LABELS: print("WARNING: ImageNet labels are empty/placeholders.")
     if not tinybert_base_model or not tinybert_classifier_head: print("CRITICAL: TinyBERT model/head failed to load.")
+    if NCNN_AVAILABLE and not object_detector_loaded_successfully:
+        print("WARNING: NanoDet-Plus NCNN Model failed to load or NCNN files missing. Object detection demo may be unavailable.")
+    elif not NCNN_AVAILABLE:
+        print("INFO: NCNN runtime not available, object detection demo is disabled.")
     app.run(debug=True)
