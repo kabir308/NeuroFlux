@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            flex-grow: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: .5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-height: 100px;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: .7rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .response-area, .error-message, .info-area {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        .response-area {
+            background-color: #e9f7ef;
+            border: 1px solid #d1e7dd;
+        }
+        .response-area h3 {
+            margin-top: 0;
+            color: #0f5132;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+         .info-area {
+            background-color: #e0e0e0;
+            border: 1px solid #cccccc;
+            color: #333;
+            font-size: 0.9em;
+        }
+        pre {
+            white-space: pre-wrap; /* Allows text to wrap */
+            word-wrap: break-word; /* Breaks long words if necessary */
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem 0;
+            background-color: #333;
+            color: #fff;
+            margin-top: auto;
+        }
+        nav {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        nav a {
+            margin: 0 10px;
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Large Language Model (LLM) Demo</h1>
+    </header>
+
+    <div class="container">
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('gallery_page') }}">Model Gallery</a>
+        </nav>
+
+        <form method="POST" action="{{ url_for('demo_llm') }}">
+            <div>
+                <label for="prompt_input">Enter your prompt:</label>
+                <textarea name="prompt_input" id="prompt_input" rows="5" placeholder="e.g., Explain quantum computing in simple terms...">{{ input_prompt if input_prompt else '' }}</textarea>
+            </div>
+            <button type="submit">Submit Prompt</button>
+        </form>
+
+        {% if error_message %}
+            <div class="error-message">
+                <h3>Error</h3>
+                <p>{{ error_message }}</p>
+            </div>
+        {% endif %}
+
+        {% if llm_response %}
+            <div class="response-area">
+                <h3>LLM Response:</h3>
+                <pre>{{ llm_response }}</pre>
+            </div>
+        {% endif %}
+
+        <div class="info-area">
+            <p><strong>Note:</strong> This demo interacts with a locally configured LLM.</p>
+            <p>LLM API Endpoint: <code>{{ llm_endpoint if llm_endpoint else 'Not configured' }}</code></p>
+            <p>Ensure your local LLM server is running and the endpoint in <code>webapp/llm_config.py</code> is correct.</p>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>&copy; NeuroFlux Project</p>
+    </footer>
+</body>
+</html>

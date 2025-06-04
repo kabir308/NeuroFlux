@@ -78,6 +78,7 @@ The NeuroFlux project includes an interactive web application to showcase some o
     *   **Emotion Detector**: Predicts emotions from text input using a custom LSTM-based model.
     *   **MobileNet**: Performs image classification using a lightweight MobileNetV2 architecture.
     *   **TinyBERT Sentiment**: Analyzes text sentiment (positive/negative) using a TinyBERT base model with a simple classification head.
+    *   **Interactive LLM Demo**: Allows users to interact with a locally configured Large Language Model (LLM) via an OpenAI-compatible API.
 *   **Interactive Demos**: Engage with live demonstrations for each model.
 *   **User-Friendly Interface**: Designed for easy navigation and interaction.
 
@@ -94,17 +95,22 @@ The NeuroFlux project includes an interactive web application to showcase some o
     pip install -r requirements.txt
     ```
     *Note: This step requires sufficient disk space, as libraries like PyTorch and Transformers can be large.*
-5.  Navigate to the web application directory:
+5.  **(For LLM Demo Only) Set up Local LLM Server & Configure Endpoint**:
+    *   The "Interactive LLM Demo" requires you to run a separate local LLM server (like `text-generation-webui` with Oobabooga, or Ollama with its OpenAI compatible API).
+    *   Ensure your chosen LLM server is running and exposes an OpenAI-compatible API endpoint (e.g., `http://localhost:5000/v1` or `http://localhost:11434/v1`).
+    *   Open the `webapp/llm_config.py` file.
+    *   Modify the `LLM_API_ENDPOINT` variable to match the URL of your local LLM server.
+6.  Navigate to the web application directory:
     ```bash
     cd webapp
     ```
-6.  Run the Flask application:
+7.  Run the Flask application:
     ```bash
     python app.py
     ```
     The application will start, and by default, it should be accessible at `http://127.0.0.1:5000` in your web browser.
 
-7.  Open your web browser and go to `http://127.0.0.1:5000`.
+8.  Open your web browser and go to `http://127.0.0.1:5000`.
 
 ### Manual Testing for the Web Application
 
@@ -137,6 +143,13 @@ To ensure the web application is functioning correctly, perform the following ma
     *   The explanation text about the model is visible.
     *   Entering text (e.g., "This movie was fantastic!") and submitting performs inference.
     *   The results section displays the original input text, the predicted sentiment (positive/negative), and a confidence score.
+*   **Interactive LLM Demo Page (`/demo/llm`)**:
+    *   Loads with the title "LLM Demo".
+    *   Displays the informational note about requiring a local LLM and the configured endpoint.
+    *   Entering a prompt (e.g., "What is the capital of France?") and submitting performs a query to the configured LLM.
+    *   The LLM's response is displayed in the response area.
+    *   If the LLM server is not running or the endpoint is incorrect, an appropriate error message from the `llm_client` should be displayed.
+    *   Test the blacklist: If your LLM is running and you can get it to say one of the words in `webapp/blacklist.txt` (e.g., "example_unsafe_word"), the output should be "[Content filtered due to potentially sensitive subject matter.]".
 *   **General Checks**:
     *   Navigation links ("Home", "Model Gallery") work correctly from all pages.
     *   The application has a consistent look and feel across pages.

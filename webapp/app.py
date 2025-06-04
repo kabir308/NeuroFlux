@@ -11,6 +11,10 @@ import torchvision.transforms as T # For image transforms
 import io # For byte streams
 import base64 # For encoding image for HTML display
 
+from webapp.llm_client import query_llm
+# Ensure llm_config is also accessible if not already via llm_client
+from webapp.llm_config import LLM_API_ENDPOINT
+
 # Adjust path to import from src and models
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
@@ -103,6 +107,11 @@ models_data = [
         'id': 'tinybert',
         'name': 'TinyBERT Sentiment',
         'description': 'Analyzes sentiment of text using TinyBERT base and a simple classifier head (demo setup).'
+    },
+    {
+        'id': 'llm',
+        'name': 'Interactive LLM Demo',
+        'description': 'Interact with a configurable Large Language Model. Requires a local LLM server (e.g., text-generation-webui or Ollama) with an OpenAI-compatible API. Configure the endpoint in webapp/llm_config.py.'
     }
 ]
 
@@ -201,6 +210,34 @@ def demo_tinybert():
                                confidence=confidence_score)
 
     return render_template('demo_tinybert.html')
+
+@app.route('/demo/llm', methods=['GET', 'POST'])
+def demo_llm():
+    llm_response = None
+    error_message = None
+    input_prompt = ""
+
+    if request.method == 'POST':
+        input_prompt = request.form.get('prompt_input', '')
+        if not input_prompt:
+            error_message = "Please enter a prompt."
+        else:
+            # Inform the user that the query is being made
+            print(f"Sending prompt to LLM: '{input_prompt}' via endpoint {LLM_API_ENDPOINT}")
+            raw_response = query_llm(input_prompt) # This function now handles error string returns
+
+            # Check if the response from query_llm indicates an error
+            if raw_response.startswith("Error:"):
+                error_message = raw_response
+                llm_response = None
+            else:
+                llm_response = raw_response
+
+    return render_template('demo_llm.html',
+                           input_prompt=input_prompt,
+                           llm_response=llm_response,
+                           error_message=error_message,
+                           llm_endpoint=LLM_API_ENDPOINT) # Pass endpoint for display/debug
 
 if __name__ == '__main__':
     if not tokenizer: print("CRITICAL: Tokenizer failed to load.")

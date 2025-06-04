@@ -18,3 +18,4 @@ datasets
 Pillow
 pytest
 pytest-flask
+requests>=2.20.0
