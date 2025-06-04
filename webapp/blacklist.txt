@@ -1,0 +1,3 @@
+example_unsafe_word
+another_bad_term
+sensitive_topic_keyword

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection Demo (NanoDet-Plus NCNN)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+        }
+        .container {
+            width: 90%; /* Wider for potentially larger images */
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            flex-grow: 1;
+        }
+        label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: bold;
+        }
+        input[type="file"] {
+            margin-bottom: 1rem;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: .7rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .results-container {
+            margin-top: 2rem;
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping for smaller screens */
+            gap: 20px; /* Space between original and detected image */
+            justify-content: space-around;
+        }
+        .image-display {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            text-align: center;
+            max-width: 100%; /* Ensure it doesn't overflow container */
+        }
+        .image-display h3 {
+            margin-top: 0;
+            color: #337ab7;
+        }
+        .image-display img {
+            max-width: 100%; /* Responsive image */
+            height: auto;
+            border-radius: 3px;
+        }
+        .error-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .detections-list {
+            margin-top: 1rem;
+            padding-left: 20px;
+        }
+        .info-area {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            border: 1px solid #cccccc;
+            color: #333;
+            font-size: 0.9em;
+        }
+        nav {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        nav a {
+            margin: 0 10px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem 0;
+            background-color: #333;
+            color: #fff;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Object Detection Demo (NanoDet-Plus with NCNN)</h1>
+    </header>
+
+    <div class="container">
+        <nav>
+            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('gallery_page') }}">Model Gallery</a>
+        </nav>
+
+        <p>Upload an image to detect objects using NanoDet-Plus model running on NCNN inference engine.
+        <br><strong>Note:</strong> NCNN availability and model loading status are checked by the server. If NCNN or the model is not available, this demo will be disabled or show an error. The actual detection quality depends on the NCNN model and the completeness of its Python post-processing logic (which is currently a placeholder).
+        </p>
+
+
+        <form method="POST" action="{{ url_for('demo_object_detection') }}" enctype="multipart/form-data">
+            <div>
+                <label for="image_file">Choose an image file:</label>
+                <input type="file" name="image_file" id="image_file" accept="image/*" required>
+            </div>
+            <button type="submit">Detect Objects</button>
+        </form>
+
+        {% if error_message %}
+            <div class="error-message">
+                <h3>Error</h3>
+                <p>{{ error_message }}</p>
+            </div>
+        {% endif %}
+
+        <div class="results-container">
+            {% if original_image_b64 %}
+                <div class="image-display">
+                    <h3>Original Image</h3>
+                    <img src="data:image/png;base64,{{ original_image_b64 }}" alt="Uploaded Image">
+                </div>
+            {% endif %}
+
+            {% if detection_results_image_b64 %}
+                <div class="image-display">
+                    <h3>Detections (Server-Side Drawing)</h3>
+                    <img src="data:image/png;base64,{{ detection_results_image_b64 }}" alt="Detection Results">
+                </div>
+            {% endif %}
+        </div>
+
+        {% if detections and detections|length > 0 %}
+            <div class="detections-summary">
+                <h3>Detected Objects Summary:</h3>
+                <ul class="detections-list">
+                    {% for det in detections %}
+                        <li>{{ det.label }} (Confidence: {{ "%.2f"|format(det.score) }}) - Box: [{{ det.box|join(', ') }}]</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% elif request.method == 'POST' and not error_message and not detections_list and detection_results_image_b64 %}
+            {# This condition means an image was processed, no errors, but no objects were detected by the (placeholder) logic #}
+             <div class="info-area">
+                <p>No objects detected, or detection logic is pending full implementation. The image was processed by NCNN.</p>
+            </div>
+        {% endif %}
+
+        <div class="info-area">
+            <p><strong>Note:</strong> This demo uses NanoDet-Plus with the NCNN runtime. Server logs provide more details on NCNN initialization. The current post-processing logic in `ncnn_object_detector.py` is a placeholder and will likely not show actual detections until fully implemented.</p>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>&copy; NeuroFlux Project</p>
+    </footer>
+</body>
+</html>
