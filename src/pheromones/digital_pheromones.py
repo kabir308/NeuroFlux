@@ -130,6 +130,76 @@ class PheromoneDatabase:
             ''', [int(time.time())])
             conn.commit()
 
+class PheromoneNetwork:
+    def __init__(self, db_path: str = "pheromones.db"):
+        """
+        Manages the network of digital pheromones and collective behaviors.
+
+        Args:
+            db_path: Path to the pheromone database.
+        """
+        self.db = PheromoneDatabase(db_path)
+
+    def broadcast_pheromone(self, agent_id: str, signal_type: str, data: Dict[str, Any], ttl: int = 3600):
+        """
+        Broadcasts a pheromone to the network.
+        This involves creating a DigitalPheromone and adding it to the database.
+        Future extensions could involve multi-protocol dispatch to other devices.
+
+        Args:
+            agent_id: ID of the agent emitting the pheromone.
+            signal_type: Type of signal (e.g., "alert", "knowledge", "coordination").
+            data: Data payload of the pheromone.
+            ttl: Time-to-live for the pheromone in seconds.
+        """
+        pheromone = DigitalPheromone(agent_id=agent_id, signal_type=signal_type, data=data, ttl=ttl)
+        self.db.add_pheromone(pheromone)
+        # TODO: Implement multi-protocol dispatch for actual network broadcast
+        print(f"Pheromone broadcasted: Agent {agent_id}, Type {signal_type}")
+
+    def collective_decision(self, proposal: Any, required_consensus: float = 0.51) -> bool:
+        """
+        Initiates a collective decision-making process based on a proposal.
+        This is a placeholder for a distributed consensus mechanism.
+
+        Args:
+            proposal: The proposal to be decided upon.
+            required_consensus: The fraction of positive responses needed for approval.
+
+        Returns:
+            True if the proposal is accepted by consensus, False otherwise.
+        """
+        # TODO: Implement distributed consensus mechanism.
+        # This might involve broadcasting a "vote_request" pheromone,
+        # collecting "vote_response" pheromones, and tallying results.
+        print(f"Collective decision process initiated for proposal: {proposal}")
+        # Placeholder: Simulate a positive outcome
+        return True
+
+    def auto_repair_trigger(self, anomaly_type: str, anomaly_data: Dict[str, Any]):
+        """
+        Triggers an auto-repair mechanism in response to a detected anomaly.
+        This typically involves broadcasting a specific type of pheromone
+        to alert relevant systems or agents.
+
+        Args:
+            anomaly_type: The type of anomaly detected (e.g., "node_failure", "performance_degradation").
+            anomaly_data: Data associated with the anomaly.
+        """
+        repair_signal_data = {
+            "anomaly_type": anomaly_type,
+            "details": anomaly_data,
+            "timestamp": time.time()
+        }
+        # Broadcast a high-priority alert pheromone for auto-repair
+        self.broadcast_pheromone(
+            agent_id="PheromoneNetworkSystem",
+            signal_type="auto_repair_alert",
+            data=repair_signal_data,
+            ttl=7200 # Longer TTL for important alerts
+        )
+        print(f"Auto-repair sequence triggered for anomaly: {anomaly_type}")
+
 def main():
     # Exemple d'utilisation
     db = PheromoneDatabase()
